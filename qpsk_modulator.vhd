@@ -1,0 +1,79 @@
+library ieee;
+use ieee.std_logic_1164.all;
+use ieee.numeric_std.all;
+
+entity qpsk_modulator is 
+port(
+
+Data_in,clk_100,clk_50: in std_logic;
+output1,output2: out signed( 15 downto 0 );
+ready,reset: in std_logic;
+valid: out std_logic
+);
+
+end qpsk_modulator;
+
+architecture rtl of qpsk_modulator is
+signal b: std_logic_vector(1 downto 0);
+signal counter: unsigned (2 downto 0);
+signal counter_valid: unsigned (15 downto 0);
+signal valids : std_logic;
+constant plus : signed(15 downto 0 ) := x"5A7F";
+constant minus : signed(15 downto 0 ) := x"A581";
+
+begin
+
+
+
+process(clk_100,reset,ready)
+
+begin
+valid <='0';
+if(reset = '1') then
+	counter <= "000";
+	counter_valid <="0000000000000000";
+	valid <='0';
+elsif( clk_100'event and clk_100 = '1' ) then
+	if( ready = '1' ) then
+		counter <= counter +1;
+		b <= Data_in & b(1);
+		counter_valid <= counter_valid +1;
+	end if;
+end if;
+if(counter = "010")then
+counter <= "000";
+end if;
+    if ( counter_valid > "0000000110001001" ) then
+		if (valids ='1') then
+			valid <= '1';
+		else 
+			valid <= '0';
+		end if;
+	end if;
+end process;
+
+process(counter,b)
+begin
+valids <='0';
+			if ( b(0) = '0' and b(1) = '0' and counter = "010" 	) then
+				output2 <= plus; 
+				output1 <= plus;
+			elsif ( b(0) = '0' and b(1) = '1'  and counter = "010" 	) then
+				output2 <= minus; 
+				output1 <= plus;
+			elsif ( b(0) = '1' and b(1) = '0'  and counter = "010" 	) then
+				output2 <= plus; 
+				output1 <= minus;
+			elsif ( b(0) = '1' and b(1) = '1'  and counter = "010" 	) then
+				output2 <= minus; 
+				output1 <= minus;	
+			else 
+			output1 <="0000000000000000";
+			output2 <="0000000000000000";
+			end if;
+			if ( counter = "010" ) then
+				valids <='1';
+			end if;
+end process;
+
+end rtl;
